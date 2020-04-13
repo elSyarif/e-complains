@@ -1,0 +1,82 @@
+
+CREATE OR REPLACE
+    /*[ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
+    [DEFINER = { user | CURRENT_USER }]
+    [SQL SECURITY { DEFINER | INVOKER }]*/
+    VIEW `db_complain`.`vprogres` 
+    AS
+(SELECT
+	`a`.`id` AS `id`,
+	`a`.`category` AS `category`,
+	`a`.`kode` AS `kode`,
+	`a`.`jenis_complain` AS `jenis_complain`,
+	`a`.`images` AS `images`,
+	'New Tiket' AS `stat`,
+	`a`.`description` AS `description`,
+	`a`.`created_at` AS `tanggal`,
+	`a`.`created_by` AS `users`,
+	15 AS percent 
+FROM
+	`mstiket` `a` UNION ALL
+SELECT
+	`a`.`id` AS `id`,
+	`a`.`category` AS `category`,
+	`a`.`kode` AS `kode`,
+	`a`.`jenis_complain` AS `jenis_complain`,
+	NULL AS `images`,
+	'Memo Tiket' AS `stat`,
+	`b`.`pesan` AS `description`,
+	`b`.`created_at` AS `tanggal`,
+	`b`.`created_by` AS `users`,
+	20 AS percent
+FROM ( `mstiket` `a` LEFT JOIN `memo` `b` ON ( `a`.`id` = `b`.`tiket_id` ) ) 
+GROUP BY
+	`a`.`id`,
+	`a`.`category`,
+	`a`.`kode` 
+UNION ALL
+SELECT
+	`a`.`id` AS `id`,
+	`a`.`category` AS `category`,
+	`a`.`kode` AS `kode`,
+	`a`.`jenis_complain` AS `jenis_complain`,
+	`d`.`images` AS `images`,
+	`d`.`result` AS `result`,
+	`d`.`description` AS `description`,
+	`d`.`created_at` AS `tanggal`,
+	`d`.`created_by` AS `users`,
+	20 AS percent
+FROM
+	( ( `msproduck` `d` JOIN `mstiket` `a` ON ( `a`.`id` = `d`.`tiket_id` ) )
+	 LEFT JOIN `msinspek` `c` ON ( `d`.`tiket_id` = `c`.`tiket_id` AND `d`.`kind_id` = `c`.`kind_id` ) 
+	) 
+UNION ALL
+SELECT
+	`a`.`id` AS `id`,
+	`a`.`category` AS `category`,
+	`a`.`kode` AS `kode`,
+	`a`.`jenis_complain` AS `jenis_complain`,
+	`d`.`images` AS `images`,
+	`d`.`result` AS `result`,
+	`d`.`description` AS `description`,
+	`d`.`created_at` AS `tanggal`,
+	`d`.`created_by` AS `users`,
+	CASE WHEN kind_id = 'Q' THEN 30 WHEN kind_id = 'P' THEN 20 END AS  percent
+FROM ( `msinspek` `d` JOIN `mstiket` `a` ON ( `a`.`id` = `d`.`tiket_id` ) ) 
+WHERE `d`.`kind_id` IN ('Q' ,'P')
+UNION ALL
+SELECT
+	`a`.`id` AS `id`,
+	`a`.`category` AS `category`,
+	`a`.`kode` AS `kode`,
+	`a`.`jenis_complain` AS `jenis_complain`,
+	`a`.`images` AS `images`,
+CASE WHEN `a`.`status` = 4 THEN 'CLOSED'  END AS `stat`, 
+'Approved by' AS `description`,
+	`a`.`created_at` AS `tanggal`,
+	`a`.`updated_by` AS `users`,
+	25 AS percent
+FROM
+	`mstiket` `a` 
+WHERE
+	`a`.`status` = 4);
